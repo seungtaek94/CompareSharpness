@@ -53,15 +53,16 @@ public:
 	CPoint m_rectStart;
 	CPoint m_rectEnd;
 
-	Mat m_dislplayImg1;
-	Mat m_dislplayImg2;
-	Mat m_cropRect1;
-	Mat m_cropRect2;
 	Mat m_originImg1;
 	Mat m_originImg2;
-	
-	int m_distancePc2Pc;
-	double m_Sharpeness;
+
+	CRect m_rectPc1;
+	CRect m_rectPc2;
+
+	double m_SharpenImg1;
+	double m_SharpenImg2;
+	double m_SharpenCropedImg1;
+	double m_SharpenCropedImg2;
 	
 	int m_nCropX;
 	int m_nCropY;
@@ -71,16 +72,16 @@ public:
 	double m_nCalibrationMousePointX;
 	double m_nCalibrationMousePointY;
 
+	Mat LoadImage();
 	void CreateBitmapInfo(int nWith, int nWeight, int bpp);
-	void DisplayImage(Mat frame, int IDC_PC);
-	void GetEditControlValue();
-	void DisplayCropRect();
-
-	Mat OpenImage();
+	void DrawBuff(Mat frame, int IDC_PC);
+	void DrawImage(CDC* pDC, Mat frame, int IDC_PC);
+	void DrawCropRect(CDC* pDC, Mat frame, int IDC_PC);
 	double GetSharpness(Mat frame);
-
+	void GetEditControlValue();
+	
 	afx_msg void OnBnClickedBtnOpenImage1();
 	afx_msg void OnBnClickedBtnOpenImage2();	
-	afx_msg void OnBnClickedBtnGetCropSharpen();
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 };
