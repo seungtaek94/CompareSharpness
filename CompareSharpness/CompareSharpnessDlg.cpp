@@ -58,6 +58,8 @@ CCompareSharpnessDlg::CCompareSharpnessDlg(CWnd* pParent /*=nullptr*/)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 
+	m_radioShapenMethod = 0;
+
 	m_nCropX = 0;
 	m_nCropY = 0;
 	m_nCropW = 0;
@@ -67,6 +69,11 @@ CCompareSharpnessDlg::CCompareSharpnessDlg(CWnd* pParent /*=nullptr*/)
 	m_SharpenImg2 = 0.0f;
 	m_SharpenCropedImg1 = 0.0f;
 	m_SharpenCropedImg2 = 0.0f;
+
+	m_nCalibrationMousePointX = 0.0f;
+	m_nCalibrationMousePointY = 0.0f;
+
+	m_strImgPath = _T("");
 }
 
 void CCompareSharpnessDlg::DoDataExchange(CDataExchange* pDX)
@@ -84,6 +91,7 @@ void CCompareSharpnessDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT_CROP_Y, m_editCropY);
 	DDX_Control(pDX, IDC_EDIT_CROP_W, m_editCropW);
 	DDX_Control(pDX, IDC_EDIT_CROP_H, m_editCropH);
+	DDX_Radio(pDX, IDC_RADIO_SELECT_SHARPEN_METHOD_1, (int&)m_radioShapenMethod);
 }
 
 BEGIN_MESSAGE_MAP(CCompareSharpnessDlg, CDialogEx)
@@ -92,8 +100,10 @@ BEGIN_MESSAGE_MAP(CCompareSharpnessDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_BTN_OPEN_IMAGE1, &CCompareSharpnessDlg::OnBnClickedBtnOpenImage1)
 	ON_BN_CLICKED(IDC_BTN_OPEN_IMAGE2, &CCompareSharpnessDlg::OnBnClickedBtnOpenImage2)
+	ON_CONTROL_RANGE(BN_CLICKED, IDC_RADIO_SELECT_SHARPEN_METHOD_1, IDC_RADIO_SELECT_SHARPEN_METHOD_3, RadioButtonClick)
 ON_WM_MOUSEMOVE()
 ON_WM_LBUTTONDOWN()
+ON_WM_LBUTTONUP()
 END_MESSAGE_MAP()
 
 
@@ -222,50 +232,69 @@ void CCompareSharpnessDlg::GetEditControlValue()
 void CCompareSharpnessDlg::OnBnClickedBtnOpenImage1()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-	m_originImg1 = LoadImage();	
-	m_SharpenImg1 = GetSharpness(m_originImg1);
-	
-	CString strTmp;
-	strTmp.Format(_T("%f"), m_SharpenImg1);
+	GetImagePath();
 
-	m_editPathImg1.SetWindowText(strPath);
-	m_staticSharpenImg1.SetWindowText(strTmp);
-	m_staticSharpenCropedImg1.SetWindowText(_T("000.000"));
+	if (!m_strImgPath.IsEmpty())
+	{
+		CString strTmp;
+		m_editPathImg1.SetWindowText(m_strImgPath);
 
-	DrawBuff(m_originImg1, IDC_PC_IMAGE1);
+		m_originImg1 = LoadImage(m_strImgPath);
+
+		m_SharpenImg1 = GetSharpness(m_originImg1);		
+		strTmp.Format(_T("%f"), m_SharpenImg1);		
+		m_staticSharpenImg1.SetWindowText(strTmp);
+
+		DrawBuff(m_originImg1, IDC_PC_IMAGE1);
+	}
+	else
+	{
+		AfxMessageBox(_T("파일이 선택되지 않았습니다."));
+	}
 }
 
 void CCompareSharpnessDlg::OnBnClickedBtnOpenImage2()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	GetImagePath();
 
-	m_originImg2 = LoadImage();
-	m_SharpenImg2 = GetSharpness(m_originImg2);
+	if (!m_strImgPath.IsEmpty())
+	{
+		CString strTmp;
+		m_editPathImg2.SetWindowText(m_strImgPath);
 
-	CString strTmp;
-	strTmp.Format(_T("%f"), m_SharpenImg2);
+		m_originImg2 = LoadImage(m_strImgPath);
 
-	m_editPathImg2.SetWindowText(strPath);
-	m_staticSharpenImg2.SetWindowText(strTmp);
-	m_staticSharpenCropedImg2.SetWindowText(_T("000.000"));
+		m_SharpenImg2 = GetSharpness(m_originImg2);		
+		strTmp.Format(_T("%f"), m_SharpenImg2);	
+		m_staticSharpenImg2.SetWindowText(strTmp);
 
-	DrawBuff(m_originImg2, IDC_PC_IMAGE2);
+		DrawBuff(m_originImg2, IDC_PC_IMAGE2);
+	}
+	else
+	{
+		AfxMessageBox(_T("파일이 선택되지 않았습니다."));
+	}
 }
 
-Mat CCompareSharpnessDlg::LoadImage()
+void CCompareSharpnessDlg::GetImagePath()
 {
+	m_strImgPath = _T("");
 	CFileDialog fileDlg(TRUE, NULL, NULL, OFN_READONLY, _T("image file(*.jpg;*.bmp;*.png;)|*.jpg;*.bmp;*.png;|All Files(*.*)|*.*||"));
 
 	if (fileDlg.DoModal() == IDOK)
 	{
-		strPath = fileDlg.GetPathName();
-
-		Mat image;
-		image = imread(CString2string(strPath), IMREAD_UNCHANGED);
-		CreateBitmapInfo(image.cols, image.rows, image.channels() * 8);
-
-		return image;
+		m_strImgPath = fileDlg.GetPathName();
 	}
+}
+
+Mat CCompareSharpnessDlg::LoadImage(CString imagePath)
+{
+	Mat image;
+	image = imread(CString2string(imagePath), IMREAD_UNCHANGED);
+	CreateBitmapInfo(image.cols, image.rows, image.channels() * 8);
+
+	return image;
 }
 
 void CCompareSharpnessDlg::DrawBuff(Mat frame, int IDC_PC)
@@ -290,8 +319,10 @@ void CCompareSharpnessDlg::DrawBuff(Mat frame, int IDC_PC)
 
 
 		DrawImage(&bufDC, frame, IDC_PC);
-		DrawCropRect(&bufDC, frame, IDC_PC);
-
+		if (m_rectStart.x != 0 && m_rectStart.y != 0)
+		{
+			DrawCropRect(&bufDC, frame, IDC_PC);
+		}
 
 		dc.BitBlt(0, 0, rect.Width(), rect.Height(), &bufDC, 0, 0, SRCCOPY);
 
@@ -352,26 +383,6 @@ void CCompareSharpnessDlg::CreateBitmapInfo(int width, int height, int bpp)
 }
 
 
-//double CCompareSharpnessDlg::GetSharpness(Mat frame)
-//{
-//	Mat gray;
-//	if (frame.channels() == 4)
-//		cvtColor(frame, gray, COLOR_BGRA2GRAY);
-//	else if (frame.channels() == 3)
-//		cvtColor(frame, gray, COLOR_BGR2GRAY);
-//	else
-//		gray = frame;
-//
-//	Mat img_laplacian;	
-//
-//	Laplacian(gray, img_laplacian, CV_64F);
-//	Scalar mean, stddev; // 0:1st channel, 1:2nd channel and 2:3rd channel
-//	meanStdDev(img_laplacian, mean, stddev, Mat());
-//	double variance = stddev.val[0] * stddev.val[0];
-//
-//	return variance;
-//}
-
 double CCompareSharpnessDlg::GetSharpness(Mat frame)
 {
 	Mat gray;
@@ -382,36 +393,39 @@ double CCompareSharpnessDlg::GetSharpness(Mat frame)
 	else
 		gray = frame;
 
-	Mat img_canny;
-		
-	Canny(gray, img_canny, 255, 175);
+	Mat imgSharpeness;
+	double dSharpness;
+	if (!frame.empty())
+	{
+		if (m_radioShapenMethod == 0)
+		{
+			// Using Canny
+			Canny(gray, imgSharpeness, 255, 175);
+			int nCountCanny = countNonZero(imgSharpeness);
+			dSharpness = (double)nCountCanny * 100.0 / ((double)imgSharpeness.cols * (double)imgSharpeness.rows);
+		}
+		else if (m_radioShapenMethod == 1)
+		{
+			// Using Sobel
+			Mat img_blur;
+			blur(gray, img_blur, cv::Size(7, 7));
+			Sobel(img_blur, imgSharpeness, CV_8U, 1, 1, 3, 1, 0, cv::BORDER_DEFAULT);
 
-	int nCountCanny = countNonZero(img_canny);
+			Mat sobel_one = imgSharpeness.reshape(1);
+			int sum_sobel = sum(sobel_one)[0];
 
-	double dSharpness = (double)nCountCanny * 100.0 / ((double)img_canny.cols * (double)img_canny.rows);
-
+			dSharpness = (double)(sum_sobel) / (double)(sobel_one.cols);
+		}
+		else // Using Laplacian
+		{
+			Laplacian(gray, imgSharpeness, CV_64F);
+			Scalar mean, stddev; // 0:1st channel, 1:2nd channel and 2:3rd channel
+			meanStdDev(imgSharpeness, mean, stddev, Mat());
+			dSharpness = stddev.val[0] * stddev.val[0];
+		}
+	}
 	return dSharpness;
 }
-
-//double CCompareSharpnessDlg::GetSharpness(Mat frame)
-//{
-//	Mat gray;
-//	if (frame.channels() == 4)
-//		cvtColor(frame, gray, COLOR_BGRA2GRAY);
-//	else if (frame.channels() == 3)
-//		cvtColor(frame, gray, COLOR_BGR2GRAY);
-//	else
-//		gray = frame;
-//
-//	Mat img_blur, img_sobel, img_laplacian;
-//	blur(gray, img_blur, cv::Size(7, 7));
-//	Sobel(img_blur, img_sobel, CV_8U, 1, 1, 3, 1, 0, cv::BORDER_DEFAULT);
-//
-//	Mat sobel_one = img_sobel.reshape(1);
-//	int sum_sobel = sum(sobel_one)[0];
-//
-//	return (double)(sum_sobel) / (double)(sobel_one.cols);
-//}
 
 void CCompareSharpnessDlg::DrawCropRect(CDC* pDC, Mat frame, int IDC_PC)
 {
@@ -485,23 +499,6 @@ void CCompareSharpnessDlg::DrawCropRect(CDC* pDC, Mat frame, int IDC_PC)
 
 	strTmp.Format(_T("%d"), m_nCropH);
 	m_editCropH.SetWindowText(strTmp);
-
-	
-	Mat matCrop;
-	matCrop = frame(Rect(m_nCropX, m_nCropY, m_nCropW, m_nCropH)).clone();
-	
-	if (IDC_PC == IDC_PC_IMAGE1) 
-	{
-		m_SharpenCropedImg1 = GetSharpness(matCrop);
-		strTmp.Format(_T("%f"), m_SharpenCropedImg1);
-		m_staticSharpenCropedImg1.SetWindowText(strTmp);
-	}
-	else
-	{
-		m_SharpenCropedImg2 = GetSharpness(matCrop);
-		strTmp.Format(_T("%f"), m_SharpenCropedImg2);
-		m_staticSharpenCropedImg2.SetWindowText(strTmp);
-	}
 }
 
 void CCompareSharpnessDlg::OnMouseMove(UINT nFlags, CPoint point)
@@ -549,4 +546,58 @@ void CCompareSharpnessDlg::OnLButtonDown(UINT nFlags, CPoint point)
 	m_rectStart = point;
 
 	CDialogEx::OnLButtonDown(nFlags, point);
+}
+
+void CCompareSharpnessDlg::RadioButtonClick(UINT ID)
+{
+	UpdateData(TRUE);
+
+	CString strTmp;
+	if (!m_originImg1.empty())
+	{
+		m_SharpenImg1 = GetSharpness(m_originImg1);
+		strTmp.Format(_T("%f"), m_SharpenImg1);
+		m_staticSharpenImg1.SetWindowText(strTmp);
+	}
+	if (!m_originImg2.empty())
+	{
+		m_SharpenImg2 = GetSharpness(m_originImg2);
+		strTmp.Format(_T("%f"), m_SharpenImg2);
+		m_staticSharpenImg2.SetWindowText(strTmp);
+	}
+	if (!m_CropImg1.empty())
+	{
+		m_SharpenCropedImg1 = GetSharpness(m_CropImg1);
+		strTmp.Format(_T("%f"), m_SharpenCropedImg1);
+		m_staticSharpenCropedImg1.SetWindowText(strTmp);
+	}
+	if (!m_CropImg2.empty())
+	{
+		m_SharpenCropedImg2 = GetSharpness(m_CropImg2);
+		strTmp.Format(_T("%f"), m_SharpenCropedImg2);
+		m_staticSharpenCropedImg2.SetWindowText(strTmp);
+	}
+}
+
+void CCompareSharpnessDlg::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	// TODO: 여기에 메시지 처리기 코드를 추가 및/또는 기본값을 호출합니다.
+	CString strTmp;
+	if (!m_originImg1.empty()) {
+		m_CropImg1 = m_originImg1(Rect(m_nCropX, m_nCropY, m_nCropW, m_nCropH)).clone();
+
+		m_SharpenCropedImg1 = GetSharpness(m_CropImg1);
+		strTmp.Format(_T("%f"), m_SharpenCropedImg1);
+		m_staticSharpenCropedImg1.SetWindowText(strTmp);
+	}
+	
+	if (!m_originImg2.empty())
+	{
+		m_CropImg2 = m_originImg2(Rect(m_nCropX, m_nCropY, m_nCropW, m_nCropH)).clone();
+
+		m_SharpenCropedImg2 = GetSharpness(m_CropImg2);
+		strTmp.Format(_T("%f"), m_SharpenCropedImg2);
+		m_staticSharpenCropedImg2.SetWindowText(strTmp);
+	}
+	CDialogEx::OnLButtonUp(nFlags, point);
 }
