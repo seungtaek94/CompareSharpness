@@ -35,8 +35,10 @@ protected:
 public:
 	BITMAPINFO* m_pBitmapInfo;
 
-	UINT m_radioShapenMethod; // 0 = Canny, 1 = Sobel, 2 = Laplacian
-	
+	UINT m_radioShapenMethod; // 0 = Canny, 1 = Sobel, else = Laplacian
+
+	CString m_strImgPath;
+
 	CStatic m_PcImg1;
 	CStatic m_PcImg2;
 	CStatic m_staticSharpenImg1;
@@ -50,7 +52,6 @@ public:
 	CEdit m_editCropY;
 	CEdit m_editCropW;
 	CEdit m_editCropH;
-	CString m_strImgPath;
 
 	CPoint m_rectStart;
 	CPoint m_rectEnd;
@@ -72,28 +73,25 @@ public:
 	int m_nCropY;
 	int m_nCropW;
 	int m_nCropH;
+	int m_nImgW;
+	int m_nImgH;
 
 	double m_nCalibrationMousePointX;
 	double m_nCalibrationMousePointY;
 
-	 
-
-	void GetImagePath();
-	Mat LoadImage(CString imagePath);
-
+	void GetImagePath();	
 	void CreateBitmapInfo(int nWith, int nWeight, int bpp);
 	void DrawBuff(Mat frame, int IDC_PC);
 	void DrawImage(CDC* pDC, Mat frame, int IDC_PC);
-	void DrawCropRect(CDC* pDC, Mat frame, int IDC_PC);
-	double GetSharpness(Mat frame);
+	void DrawCropRect(CDC* pDC, Mat frame, int IDC_PC);	
 	void GetEditControlValue();
-	
+	double GetSharpness(Mat frame);
+	Mat LoadImage(CString imagePath);
+
 	afx_msg void OnBnClickedBtnOpenImage1();
 	afx_msg void OnBnClickedBtnOpenImage2();	
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 	afx_msg void RadioButtonClick(UINT ID);
-
-	CButton m_radio1;
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 };

@@ -59,20 +59,18 @@ CCompareSharpnessDlg::CCompareSharpnessDlg(CWnd* pParent /*=nullptr*/)
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 
 	m_radioShapenMethod = 0;
-
 	m_nCropX = 0;
 	m_nCropY = 0;
 	m_nCropW = 0;
 	m_nCropH = 0;
-
+	m_nImgW = 1280;
+	m_nImgH = 720;
 	m_SharpenImg1 = 0.0f;
 	m_SharpenImg2 = 0.0f;
 	m_SharpenCropedImg1 = 0.0f;
 	m_SharpenCropedImg2 = 0.0f;
-
 	m_nCalibrationMousePointX = 0.0f;
 	m_nCalibrationMousePointY = 0.0f;
-
 	m_strImgPath = _T("");
 }
 
@@ -139,17 +137,6 @@ BOOL CCompareSharpnessDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 작은 아이콘을 설정합니다.
 
 	// TODO: 여기에 추가 초기화 작업을 추가합니다.
-
-	GetDlgItem(IDC_PC_IMAGE1)->GetWindowRect(&m_rectPc1);
-	ScreenToClient(&m_rectPc1);
-
-	GetDlgItem(IDC_PC_IMAGE2)->GetWindowRect(&m_rectPc2);
-	ScreenToClient(&m_rectPc2);
-
-	m_nCalibrationMousePointX = 1280.0 / m_rectPc1.Width();
-	m_nCalibrationMousePointY = 720.0 / m_rectPc2.Height();
-
-
 	CString strTmp;
 	strTmp.Format(_T("%d"), m_nCropX);
 	m_editCropX.SetWindowText(strTmp);
@@ -241,6 +228,15 @@ void CCompareSharpnessDlg::OnBnClickedBtnOpenImage1()
 
 		m_originImg1 = LoadImage(m_strImgPath);
 
+		GetDlgItem(IDC_PC_IMAGE1)->GetWindowRect(&m_rectPc1);
+		ScreenToClient(&m_rectPc1);
+
+		m_nImgW = m_originImg1.cols;
+		m_nImgH = m_originImg1.rows;
+
+		m_nCalibrationMousePointX = (double)m_nImgW / (double)m_rectPc1.Width();
+		m_nCalibrationMousePointY = (double)m_nImgH / (double)m_rectPc1.Height();
+
 		m_SharpenImg1 = GetSharpness(m_originImg1);		
 		strTmp.Format(_T("%f"), m_SharpenImg1);		
 		m_staticSharpenImg1.SetWindowText(strTmp);
@@ -264,6 +260,15 @@ void CCompareSharpnessDlg::OnBnClickedBtnOpenImage2()
 		m_editPathImg2.SetWindowText(m_strImgPath);
 
 		m_originImg2 = LoadImage(m_strImgPath);
+
+		GetDlgItem(IDC_PC_IMAGE2)->GetWindowRect(&m_rectPc2);
+		ScreenToClient(&m_rectPc2);
+
+		m_nImgW = m_originImg2.cols;
+		m_nImgH = m_originImg2.rows;
+
+		m_nCalibrationMousePointX = (double)m_nImgW / (double) m_rectPc2.Width();
+		m_nCalibrationMousePointY = (double)m_nImgH / (double) m_rectPc2.Height();
 
 		m_SharpenImg2 = GetSharpness(m_originImg2);		
 		strTmp.Format(_T("%f"), m_SharpenImg2);	
@@ -468,17 +473,12 @@ void CCompareSharpnessDlg::DrawCropRect(CDC* pDC, Mat frame, int IDC_PC)
 	}
 
 	if (roiL < 0) roiL = 0;
-	if (roiL > 1280) roiL = 1280;
-	if (roiR > 1280) roiR = 1280;
+	if (roiL > m_nImgW) roiL = m_nImgW;
+	if (roiR > m_nImgW) roiR = m_nImgW;
 	if (roiT < 0) roiT = 0;
-	if (roiT > 720)roiT = 720;
-	if (roiB > 720) roiB = 720;
+	if (roiT > m_nImgH)roiT = m_nImgH;
+	if (roiB > m_nImgH) roiB = m_nImgH;
 
-	/*CString strTmp;
-
-	strTmp.Format(_T("L: %d, T: %d, R: %d, B: %d\n"), roiL, roiT, roiR, roiB);
-	OutputDebugString(strTmp);*/
-	
 	CString strTmp;
 	CRect calibratedRect;
 	calibratedRect.SetRect(roiL, roiT, roiR, roiB);
@@ -504,21 +504,18 @@ void CCompareSharpnessDlg::DrawCropRect(CDC* pDC, Mat frame, int IDC_PC)
 void CCompareSharpnessDlg::OnMouseMove(UINT nFlags, CPoint point)
 {
 	// TODO: 여기에 메시지 처리기 코드를 추가 및/또는 기본값을 호출합니다.
-	if (m_rectPc1.PtInRect(point)) {
+	if (m_rectPc1.PtInRect(point)) 
+	{
 		GetCursorPos(&point);
 		GetDlgItem(IDC_PC_IMAGE1)->ScreenToClient(&point);
 	}
 
-	if (m_rectPc2.PtInRect(point)) {
+	if (m_rectPc2.PtInRect(point)) 
+	{
 		GetCursorPos(&point);
 		GetDlgItem(IDC_PC_IMAGE2)->ScreenToClient(&point);
 	}
 	
-	/*CString strTmp;
-	strTmp.Format(_T("PC1 cord => x: %d, y: %d // Image cord => x: %d, y: %d\n"), point.x, point.y,
-		(int) (point.x * m_nCalibrationMousePointX), (int)(point.y * m_nCalibrationMousePointY));
-	OutputDebugString(strTmp);*/
-
 	if (nFlags & MK_LBUTTON)
 	{
 		m_rectEnd = point;
@@ -533,12 +530,14 @@ void CCompareSharpnessDlg::OnMouseMove(UINT nFlags, CPoint point)
 void CCompareSharpnessDlg::OnLButtonDown(UINT nFlags, CPoint point)
 {
 	// TODO: 여기에 메시지 처리기 코드를 추가 및/또는 기본값을 호출합니다.
-	if (m_rectPc1.PtInRect(point)) {
+	if (m_rectPc1.PtInRect(point)) 
+	{
 		GetCursorPos(&point);
 		GetDlgItem(IDC_PC_IMAGE1)->ScreenToClient(&point);
 	}
 
-	if (m_rectPc2.PtInRect(point)) {
+	if (m_rectPc2.PtInRect(point)) 
+	{
 		GetCursorPos(&point);
 		GetDlgItem(IDC_PC_IMAGE2)->ScreenToClient(&point);
 	}
@@ -583,7 +582,8 @@ void CCompareSharpnessDlg::OnLButtonUp(UINT nFlags, CPoint point)
 {
 	// TODO: 여기에 메시지 처리기 코드를 추가 및/또는 기본값을 호출합니다.
 	CString strTmp;
-	if (!m_originImg1.empty()) {
+	if (!m_originImg1.empty()) 
+	{
 		m_CropImg1 = m_originImg1(Rect(m_nCropX, m_nCropY, m_nCropW, m_nCropH)).clone();
 
 		m_SharpenCropedImg1 = GetSharpness(m_CropImg1);
