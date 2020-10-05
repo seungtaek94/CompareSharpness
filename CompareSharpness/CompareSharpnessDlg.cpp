@@ -58,7 +58,7 @@ CCompareSharpnessDlg::CCompareSharpnessDlg(CWnd* pParent /*=nullptr*/)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 
-	m_radioShapenMethod = 0;
+	m_radioShrapenMethod = 0;
 	m_nCropX = 0;
 	m_nCropY = 0;
 	m_nCropW = 0;
@@ -69,8 +69,8 @@ CCompareSharpnessDlg::CCompareSharpnessDlg(CWnd* pParent /*=nullptr*/)
 	m_SharpenImg2 = 0.0f;
 	m_SharpenCropedImg1 = 0.0f;
 	m_SharpenCropedImg2 = 0.0f;
-	m_nCalibrationMousePointX = 0.0f;
-	m_nCalibrationMousePointY = 0.0f;
+	m_nPointCalibrationPc2ImgX = 0.0f;
+	m_nPointCalibrationPc2ImgY = 0.0f;
 	m_strImgPath = _T("");
 }
 
@@ -89,7 +89,7 @@ void CCompareSharpnessDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT_CROP_Y, m_editCropY);
 	DDX_Control(pDX, IDC_EDIT_CROP_W, m_editCropW);
 	DDX_Control(pDX, IDC_EDIT_CROP_H, m_editCropH);
-	DDX_Radio(pDX, IDC_RADIO_SELECT_SHARPEN_METHOD_1, (int&)m_radioShapenMethod);
+	DDX_Radio(pDX, IDC_RADIO_SELECT_SHARPEN_METHOD_1, (int&)m_radioShrapenMethod);
 }
 
 BEGIN_MESSAGE_MAP(CCompareSharpnessDlg, CDialogEx)
@@ -234,8 +234,8 @@ void CCompareSharpnessDlg::OnBnClickedBtnOpenImage1()
 		m_nImgW = m_originImg1.cols;
 		m_nImgH = m_originImg1.rows;
 
-		m_nCalibrationMousePointX = (double)m_nImgW / (double)m_rectPc1.Width();
-		m_nCalibrationMousePointY = (double)m_nImgH / (double)m_rectPc1.Height();
+		m_nPointCalibrationPc2ImgX = (double)m_nImgW / (double)m_rectPc1.Width();
+		m_nPointCalibrationPc2ImgY = (double)m_nImgH / (double)m_rectPc1.Height();
 
 		m_SharpenImg1 = GetSharpness(m_originImg1);		
 		strTmp.Format(_T("%f"), m_SharpenImg1);		
@@ -267,8 +267,8 @@ void CCompareSharpnessDlg::OnBnClickedBtnOpenImage2()
 		m_nImgW = m_originImg2.cols;
 		m_nImgH = m_originImg2.rows;
 
-		m_nCalibrationMousePointX = (double)m_nImgW / (double) m_rectPc2.Width();
-		m_nCalibrationMousePointY = (double)m_nImgH / (double) m_rectPc2.Height();
+		m_nPointCalibrationPc2ImgX = (double)m_nImgW / (double) m_rectPc2.Width();
+		m_nPointCalibrationPc2ImgY = (double)m_nImgH / (double) m_rectPc2.Height();
 
 		m_SharpenImg2 = GetSharpness(m_originImg2);		
 		strTmp.Format(_T("%f"), m_SharpenImg2);	
@@ -321,7 +321,6 @@ void CCompareSharpnessDlg::DrawBuff(Mat frame, int IDC_PC)
 		pOldBitmap = bufDC.SelectObject(&bitmap);
 
 		bufDC.PatBlt(0, 0, rect.Width(), rect.Height(), BLACKNESS);
-
 
 		DrawImage(&bufDC, frame, IDC_PC);
 		if (m_rectStart.x != 0 && m_rectStart.y != 0)
@@ -402,14 +401,14 @@ double CCompareSharpnessDlg::GetSharpness(Mat frame)
 	double dSharpness;
 	if (!frame.empty())
 	{
-		if (m_radioShapenMethod == 0)
+		if (m_radioShrapenMethod == 0)
 		{
 			// Using Canny
 			Canny(gray, imgSharpeness, 255, 175);
 			int nCountCanny = countNonZero(imgSharpeness);
 			dSharpness = (double)nCountCanny * 100.0 / ((double)imgSharpeness.cols * (double)imgSharpeness.rows);
 		}
-		else if (m_radioShapenMethod == 1)
+		else if (m_radioShrapenMethod == 1)
 		{
 			// Using Sobel
 			Mat img_blur;
@@ -426,7 +425,8 @@ double CCompareSharpnessDlg::GetSharpness(Mat frame)
 			Laplacian(gray, imgSharpeness, CV_64F);
 			Scalar mean, stddev; // 0:1st channel, 1:2nd channel and 2:3rd channel
 			meanStdDev(imgSharpeness, mean, stddev, Mat());
-			dSharpness = stddev.val[0] * stddev.val[0];
+			//dSharpness = stddev.val[0] * stddev.val[0];
+			dSharpness = stddev.val[0];
 		}
 	}
 	return dSharpness;
@@ -453,25 +453,14 @@ void CCompareSharpnessDlg::DrawCropRect(CDC* pDC, Mat frame, int IDC_PC)
 	brush.DeleteObject();
 	pen.DeleteObject();
 
-	int roiL = (int)(m_rectStart.x * m_nCalibrationMousePointX);
-	int roiT = (int)(m_rectStart.y * m_nCalibrationMousePointY);
-	int roiR = (int)(m_rectEnd.x * m_nCalibrationMousePointX);
-	int roiB = (int)(m_rectEnd.y * m_nCalibrationMousePointY);
+	int roiL = (int)(m_rectStart.x * m_nPointCalibrationPc2ImgX);
+	int roiT = (int)(m_rectStart.y * m_nPointCalibrationPc2ImgY);
+	int roiR = (int)(m_rectEnd.x * m_nPointCalibrationPc2ImgX);
+	int roiB = (int)(m_rectEnd.y * m_nPointCalibrationPc2ImgY);
 
-	if (roiL > roiR)
-	{
-		int tmp = roiL;
-		roiL = roiR;
-		roiR = tmp;
-	}
+	if (roiL > roiR) SWAP(roiL, roiR);	
+	if (roiB < roiT) SWAP(roiB, roiT);
 	
-	if (roiB < roiT)
-	{
-		int tmp2 = roiB;
-		roiB = roiT;
-		roiT = tmp2;
-	}
-
 	if (roiL < 0) roiL = 0;
 	if (roiL > m_nImgW) roiL = m_nImgW;
 	if (roiR > m_nImgW) roiR = m_nImgW;
@@ -530,13 +519,13 @@ void CCompareSharpnessDlg::OnMouseMove(UINT nFlags, CPoint point)
 void CCompareSharpnessDlg::OnLButtonDown(UINT nFlags, CPoint point)
 {
 	// TODO: 여기에 메시지 처리기 코드를 추가 및/또는 기본값을 호출합니다.
-	if (m_rectPc1.PtInRect(point)) 
+	if (m_rectPc1.PtInRect(point))
 	{
 		GetCursorPos(&point);
 		GetDlgItem(IDC_PC_IMAGE1)->ScreenToClient(&point);
 	}
 
-	if (m_rectPc2.PtInRect(point)) 
+	if (m_rectPc2.PtInRect(point))
 	{
 		GetCursorPos(&point);
 		GetDlgItem(IDC_PC_IMAGE2)->ScreenToClient(&point);

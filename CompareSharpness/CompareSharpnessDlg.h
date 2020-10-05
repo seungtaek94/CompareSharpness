@@ -35,7 +35,7 @@ protected:
 public:
 	BITMAPINFO* m_pBitmapInfo;
 
-	UINT m_radioShapenMethod; // 0 = Canny, 1 = Sobel, else = Laplacian
+	UINT m_radioShrapenMethod; // 0 = Canny, 1 = Sobel, else = Laplacian
 
 	CString m_strImgPath;
 
@@ -76,8 +76,8 @@ public:
 	int m_nImgW;
 	int m_nImgH;
 
-	double m_nCalibrationMousePointX;
-	double m_nCalibrationMousePointY;
+	double m_nPointCalibrationPc2ImgX;
+	double m_nPointCalibrationPc2ImgY;
 
 	void GetImagePath();	
 	void CreateBitmapInfo(int nWith, int nWeight, int bpp);
