@@ -398,7 +398,8 @@ double CCompareSharpnessDlg::GetSharpness(Mat frame)
 		gray = frame;
 
 	Mat imgSharpeness;
-	double dSharpness;
+	double dSharpness = 0.0f;
+
 	if (!frame.empty())
 	{
 		if (m_radioShrapenMethod == 0)
@@ -458,8 +459,18 @@ void CCompareSharpnessDlg::DrawCropRect(CDC* pDC, Mat frame, int IDC_PC)
 	int roiR = (int)(m_rectEnd.x * m_nPointCalibrationPc2ImgX);
 	int roiB = (int)(m_rectEnd.y * m_nPointCalibrationPc2ImgY);
 
-	if (roiL > roiR) SWAP(roiL, roiR);	
-	if (roiB < roiT) SWAP(roiB, roiT);
+	if (roiL > roiR) 
+	{
+		int tmp = roiL;
+		roiL = roiR;
+		roiR = tmp;
+	}
+	if (roiB < roiT) 
+	{
+		int tmp2 = roiB;
+		roiB = roiT;
+		roiT = tmp2;
+	}
 	
 	if (roiL < 0) roiL = 0;
 	if (roiL > m_nImgW) roiL = m_nImgW;
