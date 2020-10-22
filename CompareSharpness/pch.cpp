@@ -8,6 +8,7 @@ std::string CString2string(CString str)
 	return std::string(pszConvertedAnsiString);
 }
 
+
 #if defined(_DEBUG)
 #pragma comment(lib,"../lib/opencv_core420d.lib")
 #pragma comment(lib,"../lib/opencv_highgui420d.lib")

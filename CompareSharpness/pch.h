@@ -19,6 +19,8 @@
 #include <opencv2/imgcodecs/legacy/constants_c.h>
 #include <opencv2/videoio/legacy/constants_c.h>
 
+#define SWAP(a,b)  {(a)^=(b)^=(a)^=(b);}
+
 using namespace cv;
 using namespace std;
 

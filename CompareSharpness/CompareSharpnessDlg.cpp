@@ -402,16 +402,14 @@ double CCompareSharpnessDlg::GetSharpness(Mat frame)
 
 	if (!frame.empty())
 	{
-		if (m_radioShrapenMethod == 0)
+		if (m_radioShrapenMethod == 0) // Using Canny
 		{
-			// Using Canny
 			Canny(gray, imgSharpeness, 255, 175);
 			int nCountCanny = countNonZero(imgSharpeness);
 			dSharpness = (double)nCountCanny * 100.0 / ((double)imgSharpeness.cols * (double)imgSharpeness.rows);
 		}
-		else if (m_radioShrapenMethod == 1)
+		else if (m_radioShrapenMethod == 1) // Using Sobel
 		{
-			// Using Sobel
 			Mat img_blur;
 			blur(gray, img_blur, cv::Size(7, 7));
 			Sobel(img_blur, imgSharpeness, CV_8U, 1, 1, 3, 1, 0, cv::BORDER_DEFAULT);
@@ -459,18 +457,8 @@ void CCompareSharpnessDlg::DrawCropRect(CDC* pDC, Mat frame, int IDC_PC)
 	int roiR = (int)(m_rectEnd.x * m_nPointCalibrationPc2ImgX);
 	int roiB = (int)(m_rectEnd.y * m_nPointCalibrationPc2ImgY);
 
-	if (roiL > roiR) 
-	{
-		int tmp = roiL;
-		roiL = roiR;
-		roiR = tmp;
-	}
-	if (roiB < roiT) 
-	{
-		int tmp2 = roiB;
-		roiB = roiT;
-		roiT = tmp2;
-	}
+	if (roiL > roiR) SWAP(roiL, roiR);
+	if (roiB < roiT) SWAP(roiB, roiT);
 	
 	if (roiL < 0) roiL = 0;
 	if (roiL > m_nImgW) roiL = m_nImgW;
